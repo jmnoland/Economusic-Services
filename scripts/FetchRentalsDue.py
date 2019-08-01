@@ -70,7 +70,7 @@ def clientFetch(col_snapshot, changes, read_time):
         data = doc.to_dict()
         data["clientId"] = doc.id
         clientResults.append(data)
-        q.task_done()
+    q.task_done()
 
 # Format data to include rentals for each client within client list
 def formatData():
