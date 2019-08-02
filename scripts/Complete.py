@@ -51,15 +51,16 @@ def main():
 
 def getClientDetails(clientId):
     path = os.path.join(os.path.dirname(__file__), '../files/batched/' + clientId + '.json')
+    clientData = None
     with open(path) as file:
         clientData = json.load(file)
-        try:
-            if(clientData["sent"] == False):
-                createEmail(clientData)
-            else:
-                archiveFiles(clientId)
-        except KeyError:
+    try:
+        if(clientData["sent"] == False):
             createEmail(clientData)
+        else:
+            archiveFiles(clientId)
+    except KeyError:
+        createEmail(clientData)
 
 def createEmail(client):
     subject = "Invoice"
@@ -89,9 +90,7 @@ def sendEmail(clientEmail, message):
     try:
         with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
             server.login(accountInfo["login"], accountInfo["password"])
-            print("Sending Email")
             server.sendmail(accountInfo["login"], clientEmail, message)
-            print("DONE")
         return True
     except:
         return False
@@ -100,14 +99,17 @@ def complete(fileNames):
     clientList = []
     for file in fileNames:
         path = os.path.join(os.path.dirname(__file__), '../files/batched/' + file + '.json')
-        with open(path) as file:
-            clientList.append(json.load(file))
+        try:
+            with open(path) as file:
+                clientList.append(json.load(file))
+        except FileNotFoundError:
+            pass
 
     for client in clientList:
         total = 0
         for rental in client["rentals"]:
-            total = total + rental["rent"]
-        totalRent.append({client: client["clientId"], total: total})
+            total = total - rental["rent"]
+        totalRent.append({"client": client["clientId"], "total": total})
         try:
             if(client["sent"] == True):
                 q.put(db.collection(u'clients').document(client["clientId"]))
@@ -137,11 +139,20 @@ def updateClient(col_snapshot, changes, read_time):
                 db.collection(u'clients').document(data["clientId"]).update({
                         u'balance': final
                 })
+                archiveFiles(data["clientId"])
                 break
     q.task_done()
 
 def archiveFiles(fileName):
-    
-    pass
+    dateToday = datetime.datetime.now()
+    batchPath = "../files/batched/"
+    archivePath = "../files/archive/" + dateToday.strftime("%Y") + "/" + dateToday.strftime("%m") + "/" + dateToday.strftime("%d")
+    directoryName = os.path.dirname(__file__)
+    try:
+        os.makedirs(os.path.join(directoryName, archivePath))
+    except FileExistsError:
+        pass
 
-main()
+    os.rename(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(directoryName ,archivePath + "/" + fileName + '.json'))
+    os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
+    
