@@ -1,5 +1,6 @@
 import os
 import datetime
+from dateutil.relativedelta import relativedelta
 import json
 import email, smtplib, ssl
 import threading
@@ -21,8 +22,8 @@ with open(infoPath) as file:
 
 path = os.path.join(os.path.dirname(__file__), '../environment/credentials.json')
 cred = credentials.Certificate(path)
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+app = firebase_admin.initialize_app(cred, name="FinalizeApp")
+db = firestore.client(app=app)
 
 q = queue.Queue()
 
@@ -90,7 +91,7 @@ def sendEmail(clientEmail, message):
     try:
         with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
             server.login(accountInfo["login"], accountInfo["password"])
-            server.sendmail(accountInfo["login"], clientEmail, message)
+            # server.sendmail(accountInfo["login"], clientEmail, message)
         return True
     except:
         return False
@@ -107,9 +108,15 @@ def complete(fileNames):
 
     for client in clientList:
         total = 0
+        updateDates = []
         for rental in client["rentals"]:
             total = total - rental["rent"]
-        totalRent.append({"client": client["clientId"], "total": total})
+            updateDates.append({
+                "rentalId": rental["rentalId"], 
+                "billDate": datetime.datetime.strptime(rental["billDate"], '%d/%m/%Y, %H:%M:%S'),
+                "endDate": datetime.datetime.strptime(rental["endDate"], '%d/%m/%Y, %H:%M:%S')
+                })
+        totalRent.append({"client": client["clientId"], "total": total, "billDates": updateDates})
         try:
             if(client["sent"] == True):
                 q.put(db.collection(u'clients').document(client["clientId"]))
@@ -140,8 +147,17 @@ def updateClient(col_snapshot, changes, read_time):
                         u'balance': final
                 })
                 archiveFiles(data["clientId"])
+                updateRentals(total)
                 break
     q.task_done()
+
+def updateRentals(allInfo):
+    for rental in allInfo["billDates"]:
+        nextMonth = rental["billDate"] + relativedelta(months=+1)
+        if not(nextMonth > rental["endDate"]):
+            db.collection(u'rentals').document(rental['rentalId']).update({
+                u'billDate': nextMonth
+            })
 
 def archiveFiles(fileName):
     dateToday = datetime.datetime.now()
@@ -153,6 +169,10 @@ def archiveFiles(fileName):
     except FileExistsError:
         pass
 
-    os.rename(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(directoryName ,archivePath + "/" + fileName + '.json'))
-    os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
-    
+    try:
+        os.rename(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(directoryName ,archivePath + "/" + fileName + '.json'))
+        os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
+        os.remove(os.path.join(directoryName , batchPath + fileName + '.json'))
+        os.remove(os.path.join(directoryName , batchPath + fileName + '.pdf'))
+    except:
+        pass

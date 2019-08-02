@@ -16,8 +16,8 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, '../environment/credentials.json')
 
 cred = credentials.Certificate(filename)
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+app = firebase_admin.initialize_app(cred, name="QueryApp")
+db = firestore.client(app=app)
 
 q = queue.Queue()
 

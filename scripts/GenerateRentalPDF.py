@@ -118,4 +118,3 @@ def makeJSON(client):
     finalName = os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json')
     with open(finalName, 'w', encoding='utf-8') as file:
         json.dump(client, file, ensure_ascii=False, indent=4)
-main()
