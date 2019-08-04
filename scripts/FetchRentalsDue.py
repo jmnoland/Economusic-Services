@@ -44,18 +44,19 @@ def main():
 # Function to query rentals due
 def queryRental(start, end):
     rentalQuery = db.collection(u'rentals').where(u'billDate',u'>',start).where(u'billDate',u'<',end)
-    rentalQuery.on_snapshot(rentalFetch)
+    rentalFetch(rentalQuery.stream())
 
 # Function to query client with rental due
 def queryClient():
     while (q.empty() != True):
         ref = q.get()
-        ref.on_snapshot(clientFetch)
+        clientFetch(ref.get())
 
 # Function called after callback received
-def rentalFetch(col_snapshot, changes, read_time):
-    print(u'Callback received query snapshot at:  ', read_time)
+def rentalFetch(col_snapshot):
+    print(u'Callback received query snapshot at:  ')
     data = None
+    print(col_snapshot)
     for doc in col_snapshot:
         data = doc.to_dict()
         data['rentalId'] = doc.id
@@ -63,13 +64,14 @@ def rentalFetch(col_snapshot, changes, read_time):
     rentalsComplete.set()
 
 # Function called after callback received
-def clientFetch(col_snapshot, changes, read_time):
-    print(u'Callback received query snapshot at:  ', read_time)
+def clientFetch(doc):
+    print(u'Callback received query snapshot at:  ')
     data = None
-    for doc in col_snapshot:
-        data = doc.to_dict()
-        data["clientId"] = doc.id
-        clientResults.append(data)
+    print(doc)
+    # for doc in col_snapshot:
+    data = doc.to_dict()
+    data["clientId"] = doc.id
+    clientResults.append(data)
     q.task_done()
 
 # Format data to include rentals for each client within client list

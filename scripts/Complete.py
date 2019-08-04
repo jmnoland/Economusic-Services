@@ -91,7 +91,7 @@ def sendEmail(clientEmail, message):
     try:
         with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
             server.login(accountInfo["login"], accountInfo["password"])
-            # server.sendmail(accountInfo["login"], clientEmail, message)
+            server.sendmail(accountInfo["login"], clientEmail, message)
         return True
     except:
         return False
@@ -132,23 +132,20 @@ def complete(fileNames):
 def currentClient():
     while (q.empty() != True):
         ref = q.get()
-        ref.on_snapshot(updateClient)
+        updateClient(ref.get())
 
-def updateClient(col_snapshot, changes, read_time):
-    print(u'Callback received query snapshot at:  ', read_time)
-    data = None
-    for doc in col_snapshot:
-        data = doc.to_dict()
-        data["clientId"] = doc.id
-        for total in totalRent:
-            if(data["clientId"] == total["client"]):
-                final = data["balance"] + total["total"]
-                db.collection(u'clients').document(data["clientId"]).update({
-                        u'balance': final
-                })
-                archiveFiles(data["clientId"])
-                updateRentals(total)
-                break
+def updateClient(doc):
+    data = doc.to_dict()
+    data["clientId"] = doc.id
+    for total in totalRent:
+        if(data["clientId"] == total["client"]):
+            final = data["balance"] + total["total"]
+            db.collection(u'clients').document(data["clientId"]).update({
+                    u'balance': final
+            })
+            archiveFiles(data["clientId"])
+            updateRentals(total)
+            break
     q.task_done()
 
 def updateRentals(allInfo):
