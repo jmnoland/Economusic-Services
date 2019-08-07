@@ -2,7 +2,11 @@ import os
 import json
 import datetime
 import threading
-import queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import firebase_admin
 from firebase_admin import credentials
@@ -98,5 +102,8 @@ def writeJson(date):
     fileName = date.strftime("%d-%m-%Y") + '.json'
     dirname = os.path.dirname(__file__)
     finalName = os.path.join(dirname, '../files/json/' + fileName)
-    with open(finalName, 'w', encoding='utf-8') as file:
-        json.dump(clientResults, file, ensure_ascii=False, indent=4)
+    with open(finalName, 'w') as file:
+        json.dump(clientResults, file)
+        
+#    with open(finalName, 'w', encoding='utf-8') as file:
+#        json.dump(clientResults, file, ensure_ascii=False, indent=4)

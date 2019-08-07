@@ -12,6 +12,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+import logging
+
 
 class Scheduler():
 
@@ -30,7 +32,14 @@ class Scheduler():
                         'max_instances': 3
                 }
                 scheduler = BlockingScheduler(executors=executors, job_defaults=job_defaults, timezone=utc)
-
+                
+                log = logging.getLogger('apscheduler.executors.default')
+                log.setLevel(logging.INFO) 
+                fmt = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+                h = logging.StreamHandler()
+                h.setFormatter(fmt)
+                log.addHandler(h)
+                
                 job3 = scheduler.add_job(self.email, 'cron', hour='8')
                 job1 = scheduler.add_job(self.fetchRentals, 'cron', hour='12')
                 job2 = scheduler.add_job(self.generatePDF, 'cron', hour='14')
@@ -43,13 +52,17 @@ class Scheduler():
                 return value.to_dict()['val']
 
         def fetchRentals(self):
+                print("Get Rentals Due")
                 if(self.checkRun() == True):
                         FetchRentalsDue.main()
 
         def generatePDF(self):
+                print("Generate PDF")
                 if(self.checkRun() == True):
                         GenerateRentalPDF.main()
 
         def email(self):
+                print("Email")
                 if(self.checkRun() == True):
                         Complete.main()
+                        

@@ -14,11 +14,23 @@ def main():
     with open(bDetails) as bank_file:
         accountDetails = json.load(bank_file)
 
+    clientFullData = []
     for json_file in fileList:
         path = os.path.join(os.path.dirname(__file__), '../files/json/' + json_file)
         with open(path) as file:
             data = json.load(file)
-            for client in data:
+            for newClient in data:
+                if(len(clientFullData) >= 1):
+                    found = False
+                    for curClient in clientFullData:
+                        if(newClient['clientId'] == curClient['clientId']):
+                            curClient['rentals'].append(newClient['rentals'][0])
+                            found = True
+                    if(found == False):
+                        clientFullData.append(newClient)
+                else:
+                    clientFullData.append(newClient)
+            for client in clientFullData:
                 makePDF(client, accountDetails)
                 makeJSON(client)
         os.remove(path)
@@ -116,5 +128,5 @@ def makePDF(client, accountDetails):
 
 def makeJSON(client):
     finalName = os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json')
-    with open(finalName, 'w', encoding='utf-8') as file:
-        json.dump(client, file, ensure_ascii=False, indent=4)
+    with open(finalName, 'w') as file:
+        json.dump(client, file)

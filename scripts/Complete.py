@@ -4,7 +4,11 @@ from dateutil.relativedelta import relativedelta
 import json
 import email, smtplib, ssl
 import threading
-import queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 from email import encoders
 from email.mime.base import MIMEBase
@@ -77,23 +81,32 @@ def createEmail(client):
         part = MIMEBase("application", "octet-stream")
         part.set_payload(attachment.read())
         encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f"attachment; filename={pdfName}",)
+        part.add_header("Content-Disposition", "attachment; filename={0}".format(pdfName))
         message.attach(part)
         text = message.as_string()
         check = sendEmail(client["email"],text)
 
     client["sent"] = check
-    with open(os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json'), 'w', encoding='utf-8') as json_file:
-        json.dump(client, json_file, ensure_ascii=False, indent=4)
+    with open(os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json'), 'w') as json_file:
+        json.dump(client, json_file)
 
 def sendEmail(clientEmail, message):
     # Not secure at all
+    server = None
     try:
-        with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
-            server.login(accountInfo["login"], accountInfo["password"])
-            server.sendmail(accountInfo["login"], clientEmail, message)
+        #with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
+        #    server.login(accountInfo["login"], accountInfo["password"])
+        #    server.sendmail(accountInfo["login"], clientEmail, message)
+        server = smtplib.SMTP(accountInfo["server"], accountInfo["port"])
+        server.login(accountInfo["login"], accountInfo["password"])
+        server.sendmail(accountInfo["login"], clientEmail, message)
+        server.quit()
         return True
     except:
+        try:
+            server.quit()
+        except:
+            pass
         return False
 
 def complete(fileNames):
