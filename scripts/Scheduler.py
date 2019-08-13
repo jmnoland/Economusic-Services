@@ -1,5 +1,7 @@
 from pytz import utc
 import os
+import json
+import datetime
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
@@ -54,15 +56,43 @@ class Scheduler():
         def fetchRentals(self):
                 print("Get Rentals Due")
                 if(self.checkRun() == True):
-                        FetchRentalsDue.main()
+                        try:
+                                FetchRentalsDue.main()
+                        except Exception as error:
+                                self.errorHandler("FetchRentalsDue", error)
 
         def generatePDF(self):
                 print("Generate PDF")
                 if(self.checkRun() == True):
-                        GenerateRentalPDF.main()
+                        try:
+                                GenerateRentalPDF.main()
+                        except Exception as error:
+                                self.errorHandler("GenerateRentalPDF", error)
 
         def email(self):
                 print("Email")
                 if(self.checkRun() == True):
-                        Complete.main()
+                        try:
+                                Complete.main()
+                        except Exception as error:
+                                self.errorHandler("Complete", error)
                         
+        def errorHandler(self, process, error):
+                errorInfo = []
+                dateToday = datetime.datetime.now()
+                errorPath = "../files/errors/" + dateToday.strftime("%Y") + "/" + dateToday.strftime("%m") + "/" + dateToday.strftime("%d")
+                directoryName = os.path.dirname(__file__)
+                try:
+                        os.makedirs(os.path.join(directoryName, errorPath))
+                except FileExistsError:
+                        pass
+                
+                try:
+                        with open(os.path.join(directoryName, errorPath + "/errors.json"), 'r') as error_file:
+                                errorInfo = json.load(error_file)
+                except:
+                        pass
+                
+                errorInfo.append({ "process": process, "errorMessage": error})
+                with open(os.path.join(directoryName, errorPath + "/errors.json"), 'w') as json_file:
+                        json.dump(errorInfo, json_file)
