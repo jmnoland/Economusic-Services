@@ -67,8 +67,8 @@ def makePDF(client, accountDetails):
     pdf.ln()
 
     pdf.cell(125, 5, "")
-    pdf.cell(0, 5, "Due Date:")
-    pdf.cell(0, 5, "???", 0, 0, "R")
+    pdf.cell(0, 5, "")
+    pdf.cell(0, 5, "", 0, 0, "R")
     pdf.ln()
 
     pdf.set_fill_color(220,220,220)

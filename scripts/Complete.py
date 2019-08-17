@@ -32,6 +32,7 @@ db = firestore.client(app=app)
 q = queue.Queue()
 
 totalRent = []
+archiveList = []
 
 def main():
     dirname = os.path.dirname(__file__)
@@ -53,6 +54,8 @@ def main():
         getClientDetails(client)
     
     complete(fileNames)
+    finalEmail()
+    archiveFiles()
 
 def getClientDetails(clientId):
     path = os.path.join(os.path.dirname(__file__), '../files/batched/' + clientId + '.json')
@@ -63,7 +66,7 @@ def getClientDetails(clientId):
         if(clientData["sent"] == False):
             createEmail(clientData)
         else:
-            archiveFiles(clientId)
+            archiveList.append(clientId)
     except KeyError:
         createEmail(clientData)
 
@@ -94,7 +97,7 @@ def sendEmail(clientEmail, message):
     # Not secure at all
     server = None
     try:
-        #with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
+        # with smtplib.SMTP(accountInfo["server"], accountInfo["port"]) as server:
         #    server.login(accountInfo["login"], accountInfo["password"])
         #    server.sendmail(accountInfo["login"], clientEmail, message)
         server = smtplib.SMTP(accountInfo["server"], accountInfo["port"])
@@ -131,7 +134,7 @@ def complete(fileNames):
                 })
         totalRent.append({"client": client["clientId"], "total": total, "billDates": updateDates})
         try:
-            if(client["sent"] == True):
+            if(client["sent"] == True and (client["clientId"] not in archiveList)):
                 q.put(db.collection(u'clients').document(client["clientId"]))
             else:
                 pass
@@ -156,7 +159,7 @@ def updateClient(doc):
             db.collection(u'clients').document(data["clientId"]).update({
                     u'balance': final
             })
-            archiveFiles(data["clientId"])
+            archiveList.append(data["clientId"])
             updateRentals(total)
             break
     q.task_done()
@@ -169,20 +172,45 @@ def updateRentals(allInfo):
                 u'billDate': nextMonth
             })
 
-def archiveFiles(fileName):
-    dateToday = datetime.datetime.now()
-    batchPath = "../files/batched/"
-    archivePath = "../files/archive/" + dateToday.strftime("%Y") + "/" + dateToday.strftime("%m") + "/" + dateToday.strftime("%d")
-    directoryName = os.path.dirname(__file__)
+def finalEmail():
+    subject = "Summary of invoiced clients"
+    body =  "The following clients have been invoiced today:\n"
+    message = MIMEMultipart()
+    message["From"] = accountInfo["login"]
+    message["To"] = "jody@economusic.co.za"
+    message["Subject"] = subject
+    for file in archiveList:
+        path = os.path.join(os.path.dirname(__file__), '../files/batched/' + file + '.json')
+        with open(path, 'r') as json_file:
+            client = json.load(json_file)
+            body = body + ("\t - " + client["name"] + " " + client["surname"] + "\n")
+    message.attach(MIMEText(body, "plain"))
     try:
-        os.makedirs(os.path.join(directoryName, archivePath))
-    except FileExistsError:
-        pass
-
-    try:
-        os.rename(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(directoryName ,archivePath + "/" + fileName + '.json'))
-        os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
-        os.remove(os.path.join(directoryName , batchPath + fileName + '.json'))
-        os.remove(os.path.join(directoryName , batchPath + fileName + '.pdf'))
+        server = smtplib.SMTP(accountInfo["server"], accountInfo["port"])
+        server.login(accountInfo["login"], accountInfo["password"])
+        server.sendmail(accountInfo["login"], accountInfo["login"], message.as_string())
+        server.quit()
     except:
-        pass
+        try:
+            server.quit()
+        except:
+            pass
+
+def archiveFiles():
+    for fileName in archiveList:
+        dateToday = datetime.datetime.now()
+        batchPath = "../files/batched/"
+        archivePath = "../files/archive/" + dateToday.strftime("%Y") + "/" + dateToday.strftime("%m") + "/" + dateToday.strftime("%d")
+        directoryName = os.path.dirname(__file__)
+        try:
+            os.makedirs(os.path.join(directoryName, archivePath))
+        except FileExistsError:
+            pass
+
+        try:
+            os.rename(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(directoryName ,archivePath + "/" + fileName + '.json'))
+            os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
+            os.remove(os.path.join(directoryName , batchPath + fileName + '.json'))
+            os.remove(os.path.join(directoryName , batchPath + fileName + '.pdf'))
+        except:
+            pass
