@@ -2,6 +2,7 @@ from pytz import utc
 import os
 import json
 import datetime
+import traceback
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
@@ -16,13 +17,14 @@ from firebase_admin import firestore
 
 import logging
 
-
 class Scheduler():
 
         path = os.path.join(os.path.dirname(__file__), '../environment/credentials.json')
         cred = credentials.Certificate(path)
         app = firebase_admin.initialize_app(cred, name="SchedulerApp")
         db = firestore.client(app=app)
+
+        stackTrace = None
 
         def __init__(self):
                 executors = {
@@ -45,7 +47,7 @@ class Scheduler():
                 job3 = scheduler.add_job(self.email, 'cron', hour='8')
                 job1 = scheduler.add_job(self.fetchRentals, 'cron', hour='12')
                 job2 = scheduler.add_job(self.generatePDF, 'cron', hour='14')
-
+                
                 scheduler.start()
 
         def checkRun(self):
@@ -58,24 +60,36 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 FetchRentalsDue.main()
-                        except Exception as error:
-                                self.errorHandler("FetchRentalsDue", error)
+                        except Exception:    
+                                self.stackTrace = traceback.format_exc()
+                        else:
+                                self.stackTrace = "No error"
+                        finally:
+                                self.errorHandler("Fetch rentals", self.stackTrace)
 
         def generatePDF(self):
                 print("Generate PDF")
                 if(self.checkRun() == True):
                         try:
                                 GenerateRentalPDF.main()
-                        except Exception as error:
-                                self.errorHandler("GenerateRentalPDF", error)
+                        except Exception:
+                                self.stackTrace = traceback.format_exc()
+                        else:
+                                self.stackTrace = "No error"
+                        finally:
+                                self.errorHandler("GenerateRentalPDF", self.stackTrace)
 
         def email(self):
                 print("Email")
                 if(self.checkRun() == True):
                         try:
                                 Complete.main()
-                        except Exception as error:
-                                self.errorHandler("Complete", error)
+                        except Exception:
+                                self.stackTrace = traceback.format_exc()
+                        else:
+                                self.stackTrace = "No error"
+                        finally:
+                                self.errorHandler("Complete", self.stackTrace)
                         
         def errorHandler(self, process, error):
                 errorInfo = []
