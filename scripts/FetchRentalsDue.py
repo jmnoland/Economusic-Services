@@ -106,6 +106,5 @@ def writeJson(date):
     with open(finalName, 'w') as file:
         json.dump(clientResults, file)
         
-main()
 #    with open(finalName, 'w', encoding='utf-8') as file:
 #        json.dump(clientResults, file, ensure_ascii=False, indent=4)
