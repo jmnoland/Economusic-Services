@@ -42,8 +42,9 @@ def main():
     clientThread.start()
 
     q.join()
-    formatData()
-    writeJson(date)
+    if(len(clientResults) > 0 and len(rentalResults) > 0):
+        formatData()
+        writeJson(date)
 
 # Function to query rentals due
 def queryRental(start, end):
@@ -58,7 +59,7 @@ def queryClient():
 
 # Function called after callback received
 def rentalFetch(col_snapshot):
-    print(u'Callback received query snapshot at:  ')
+    print(u'Rental callback received query snapshot at:  ')
     data = None
     print(col_snapshot)
     for doc in col_snapshot:
@@ -69,7 +70,7 @@ def rentalFetch(col_snapshot):
 
 # Function called after callback received
 def clientFetch(doc):
-    print(u'Callback received query snapshot at:  ')
+    print(u'Client callback received query snapshot at:  ')
     data = None
     print(doc)
     # for doc in col_snapshot:
@@ -105,5 +106,6 @@ def writeJson(date):
     with open(finalName, 'w') as file:
         json.dump(clientResults, file)
         
+main()
 #    with open(finalName, 'w', encoding='utf-8') as file:
 #        json.dump(clientResults, file, ensure_ascii=False, indent=4)

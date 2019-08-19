@@ -54,8 +54,9 @@ def main():
         getClientDetails(client)
     
     complete(fileNames)
-    finalEmail()
-    archiveFiles()
+    if(len(archiveList) > 0):
+        finalEmail()
+        archiveFiles()
 
 def getClientDetails(clientId):
     path = os.path.join(os.path.dirname(__file__), '../files/batched/' + clientId + '.json')
