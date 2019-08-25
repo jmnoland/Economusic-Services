@@ -56,39 +56,33 @@ class Scheduler():
                 return value.to_dict()['val']
 
         def fetchRentals(self):
-                print("Get Rentals Due")
                 if(self.checkRun() == True):
                         try:
                                 FetchRentalsDue.main()
                         except Exception:    
                                 self.stackTrace = traceback.format_exc()
-                        else:
-                                self.stackTrace = "No error"
-                        finally:
+                                if(self.stackTrace == None):
+                                        self.stackTrace = "No error"
                                 self.errorHandler("Fetch rentals", self.stackTrace)
 
         def generatePDF(self):
-                print("Generate PDF")
                 if(self.checkRun() == True):
                         try:
                                 GenerateRentalPDF.main()
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
-                        else:
-                                self.stackTrace = "No error"
-                        finally:
+                                if(self.stackTrace == None):
+                                        self.stackTrace = "No error"
                                 self.errorHandler("GenerateRentalPDF", self.stackTrace)
 
         def email(self):
-                print("Email")
                 if(self.checkRun() == True):
                         try:
                                 Complete.main()
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
-                        else:
-                                self.stackTrace = "No error"
-                        finally:
+                                if(self.stackTrace == None):
+                                        self.stackTrace = "No error"
                                 self.errorHandler("Complete", self.stackTrace)
                         
         def errorHandler(self, process, error):
