@@ -157,13 +157,17 @@ class QuoteOrderInvoice():
         with open(infoPath) as file:
             self.accountInfo = json.load(file)
 
-        text = 'Order quote'
+        text = 'quote'
         if(data['quote'] == False):
-            text = 'Order invoice'
+            text = 'invoice'
+
+        morAft = "afternoon"
+        if(datetime.datetime.today().hour < 12):
+            morAft = "morning"
 
         subject = text
-        body =  "Good morning, \n\n Please find your attached Economusic " + text + "."
-        pdfName = 'Economusic ' + text + '.pdf'
+        body =  "Good " + morAft + ", \n\n Please find your attached Economusic Order " + text + "."
+        pdfName = 'Economusic_' + text + '.pdf'
         message = MIMEMultipart()
         message["From"] = self.accountInfo["login"]
         message["To"] = data["email"]
@@ -197,6 +201,23 @@ class QuoteOrderInvoice():
         self.__db.collection(u'orders').document(data["orderId"]).update({
                 u'sent': True
         })
-        directoryName = os.path.dirname(__file__)
+        self.archiveFile(data['orderId'])
+
+    def archiveFile(self, fileName):
+        dateToday = datetime.datetime.now()
         orderPath = "../files/orders/"
-        os.remove(os.path.join(directoryName , orderPath + data['orderId'] + '.pdf'))
+        archivePath = "../files/orders/" + dateToday.strftime("%Y") + "/" + dateToday.strftime("%m") + "/" + dateToday.strftime("%d")
+        directoryName = os.path.dirname(__file__)
+        try:
+            os.makedirs(os.path.join(directoryName, archivePath))
+        except FileExistsError:
+            pass
+
+        try:
+            os.rename(
+                os.path.join(directoryName , orderPath + fileName + '.pdf'), 
+                os.path.join(directoryName ,archivePath + "/" + fileName + dateToday.strftime("%H-%M-%S") + '.pdf')
+                )
+            os.remove(os.path.join(directoryName , orderPath + fileName + '.pdf'))
+        except:
+            pass
