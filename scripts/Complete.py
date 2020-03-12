@@ -168,7 +168,7 @@ def updateClient(doc):
 def updateRentals(allInfo):
     for rental in allInfo["billDates"]:
         nextMonth = rental["billDate"] + relativedelta(months=+1)
-        if not(nextMonth > rental["endDate"]):
+        if not(nextMonth > (rental["endDate"] + relativedelta(months=+1))):
             db.collection(u'rentals').document(rental['rentalId']).update({
                 u'billDate': nextMonth
             })
@@ -185,6 +185,7 @@ def finalEmail():
         with open(path, 'r') as json_file:
             client = json.load(json_file)
             body = body + ("\t - " + client["name"] + " " + client["surname"] + "\n")
+    body = body + ("\nRegards\n Economusic")
     message.attach(MIMEText(body, "plain"))
     try:
         server = smtplib.SMTP(accountInfo["server"], accountInfo["port"])
