@@ -107,3 +107,5 @@ environment/
 
 # file Folders
 files/
+
+scripts/*.db
