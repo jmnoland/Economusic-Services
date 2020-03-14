@@ -104,7 +104,7 @@ def writeJson(date):
     dirname = os.path.dirname(__file__)
     finalName = os.path.join(dirname, '../files/json/' + fileName)
     with open(finalName, 'w') as file:
-        json.dump(clientResults, file)
+        json.dump(clientResults, file, indent=4, sort_keys=True)
         
 #    with open(finalName, 'w', encoding='utf-8') as file:
 #        json.dump(clientResults, file, ensure_ascii=False, indent=4)

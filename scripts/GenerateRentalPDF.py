@@ -129,4 +129,4 @@ def makePDF(client, accountDetails):
 def makeJSON(client):
     finalName = os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json')
     with open(finalName, 'w') as file:
-        json.dump(client, file)
+        json.dump(client, file, indent=4, sort_keys=True)
