@@ -33,6 +33,7 @@ q = queue.Queue()
 
 totalRent = []
 archiveList = []
+mailSent = [False]
 
 def main():
     dirname = os.path.dirname(__file__)
@@ -55,7 +56,8 @@ def main():
     
     complete(fileNames)
     if(len(archiveList) > 0):
-        finalEmail()
+        if mailSent[0]:
+            finalEmail()
         archiveFiles()
 
 def getClientDetails(clientId):
@@ -72,9 +74,13 @@ def getClientDetails(clientId):
         createEmail(clientData)
 
 def createEmail(client):
-    subject = "Invoice"
-    body =  "Good morning, \n\n Please find your attached Economusic rental invoice for the month."
-    pdfName = 'Economusic Invoice.pdf'
+    subject = "Economusic Invoice"
+    morAft = "afternoon"
+    if(datetime.datetime.today().hour < 12):
+        morAft = "morning"
+
+    body =  "Good " + morAft + ", \n\nPlease find your attached rental invoice for the month.\n\nRegards\nEconomusic"
+    pdfName = 'Economusic_Invoice.pdf'
     message = MIMEMultipart()
     message["From"] = accountInfo["login"]
     message["To"] = client["email"]
@@ -89,10 +95,15 @@ def createEmail(client):
         message.attach(part)
         text = message.as_string()
         check = sendEmail(client["email"],text)
+        if check:
+            mailSent[0] = True
+            for cc in client["ccEmails"]:
+                sendEmail(cc, text)
 
     client["sent"] = check
+    client["sentTime"] = datetime.datetime.today().strftime("%d/%m/%Y, %H:%M:%S")
     with open(os.path.join(os.path.dirname(__file__), '../files/batched/' + client["clientId"] + '.json'), 'w') as json_file:
-        json.dump(client, json_file)
+        json.dump(client, json_file, indent=4, sort_keys=True)
 
 def sendEmail(clientEmail, message):
     # Not secure at all
@@ -178,14 +189,14 @@ def finalEmail():
     body =  "The following clients have been invoiced today:\n"
     message = MIMEMultipart()
     message["From"] = accountInfo["login"]
-    message["To"] = "jody@economusic.co.za"
+    message["To"] = accountInfo["summary"]
     message["Subject"] = subject
     for file in archiveList:
         path = os.path.join(os.path.dirname(__file__), '../files/batched/' + file + '.json')
         with open(path, 'r') as json_file:
             client = json.load(json_file)
-            body = body + ("\t - " + client["name"] + " " + client["surname"] + "\n")
-    body = body + ("\nRegards\n Economusic")
+            if client["sent"]:
+                body = body + ("\t - " + client["name"] + " " + client["surname"] + "\n")
     message.attach(MIMEText(body, "plain"))
     try:
         server = smtplib.SMTP(accountInfo["server"], accountInfo["port"])
