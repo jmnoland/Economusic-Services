@@ -25,7 +25,7 @@ class Scheduler():
         cred = credentials.Certificate(path)
         app = firebase_admin.initialize_app(cred, name="SchedulerApp")
         db = firestore.client(app=app)
-        conn = sqlite3.connect('Job.db')
+        conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Job.db'))
         __cur = conn.cursor()
 
         stackTrace = None
