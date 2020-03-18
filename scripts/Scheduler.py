@@ -25,19 +25,21 @@ class Scheduler():
         cred = credentials.Certificate(path)
         app = firebase_admin.initialize_app(cred, name="SchedulerApp")
         db = firestore.client(app=app)
-        conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Job.db'))
-        __cur = conn.cursor()
+        jobDbPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Job.db')
 
         stackTrace = None
 
         def __init__(self):
                 try:
-                        self.__cur.execute("""CREATE TABLE IF NOT EXISTS Jobs (
+                        conn = sqlite3.connect(self.jobDbPath)
+                        cur = conn.cursor()
+                        cur.execute("""CREATE TABLE IF NOT EXISTS Jobs (
                                         Process TEXT NOT NULL,
                                         Complete BIT NOT NULL,
                                         Runtime TIMESTAMP NOT NULL
                                 );""")
-                        self.conn.commit()
+                        conn.commit()
+                        conn.close()
                 except Exception:
                         self.stackTrace = traceback.format_exc()
                         if(self.stackTrace == None):
@@ -57,24 +59,26 @@ class Scheduler():
                 self.createJobs(scheduler)
                 scheduler.start()
                 
-        def readJobs(self):
-                self.__cur.execute('''SELECT * FROM Jobs ORDER BY Runtime''')
-                for row in self.__cur:
-                        print(row)
+        # def readJobs(self):
+        #         self.__cur.execute('''SELECT * FROM Jobs ORDER BY Runtime''')
+        #         for row in self.__cur:
+        #                 print(row)
 
-        def delete(self):
-                self.__cur.execute("DELETE FROM Jobs")
-                self.conn.commit()
+        # def delete(self):
+        #         self.__cur.execute("DELETE FROM Jobs")
+        #         self.conn.commit()
 
         def createJobs(self, scheduler):
+                conn = sqlite3.connect(self.jobDbPath)
+                cur = conn.cursor()
                 now = datetime.datetime.today()
-                self.__cur.execute('''SELECT * FROM Jobs 
+                cur.execute('''SELECT * FROM Jobs 
                                 WHERE Complete = 0 AND Runtime < ? 
                                 ORDER BY Runtime''', (now,))
-                pastJobs = [row for row in self.__cur]
+                pastJobs = [row for row in cur]
+                conn.close()
 
                 for job in pastJobs:
-                        print(job)
                         if job[0] == 'FetchRentals':
                                 self.fetchRentals()
                         if job[0] == 'GenerateRentalPDF':
@@ -96,9 +100,12 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 FetchRentalsDue.main()
-                                self.__cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'FetchRentals' ''')
-                                self.__cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("FetchRentals", False, self.newDateTime(datetime.datetime.today(), 12)))
-                                self.conn.commit()
+                                conn = sqlite3.connect(self.jobDbPath)
+                                cur = conn.cursor()
+                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'FetchRentals' ''')
+                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("FetchRentals", False, self.newDateTime(datetime.datetime.today(), 12)))
+                                conn.commit()
+                                conn.close()
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -109,9 +116,12 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 GenerateRentalPDF.main()
-                                self.__cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'GenerateRentalPDF' ''')
-                                self.__cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("GenerateRentalPDF", False, self.newDateTime(datetime.datetime.today(), 14)))
-                                self.conn.commit()
+                                conn = sqlite3.connect(self.jobDbPath)
+                                cur = conn.cursor()
+                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'GenerateRentalPDF' ''')
+                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("GenerateRentalPDF", False, self.newDateTime(datetime.datetime.today(), 14)))
+                                conn.commit()
+                                conn.close()
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -122,9 +132,12 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 Complete.main()
-                                self.__cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'Complete' ''')
-                                self.__cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("Complete", False, self.newDateTime(datetime.datetime.today(), 8)))
-                                self.conn.commit()
+                                conn = sqlite3.connect(self.jobDbPath)
+                                cur = conn.cursor()
+                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'Complete' ''')
+                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("Complete", False, self.newDateTime(datetime.datetime.today(), 8)))
+                                conn.commit()
+                                conn.close()
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -134,8 +147,11 @@ class Scheduler():
         def dbMaintenance(self):
                 clearDate = datetime.datetime.today()
                 clearDate = clearDate.replace(month=(clearDate.month - 2))
-                self.__cur.execute(''' DELETE FROM Jobs WHERE Runtime < ? ''', (clearDate,))
-                self.conn.commit()
+                conn = sqlite3.connect(self.jobDbPath)
+                cur = conn.cursor()
+                cur.execute(''' DELETE FROM Jobs WHERE Runtime < ? ''', (clearDate,))
+                conn.commit()
+                conn.close()
 
         def newDateTime(self, dtObj, nHour, addDay=1):
                 newDate = dtObj + datetime.timedelta(days=addDay)
@@ -159,5 +175,4 @@ class Scheduler():
                 
                 errorInfo.append({ "process": process, "errorMessage": error})
                 with open(os.path.join(directoryName, errorPath + "/errors.json"), 'w') as json_file:
-                        json.dump(errorInfo, json_file)
-Scheduler()
+                        json.dump(errorInfo, json_file, indent=4, sort_keys=True)
