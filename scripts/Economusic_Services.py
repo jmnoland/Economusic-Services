@@ -1,5 +1,5 @@
-import daemon
+# import daemon
 from Scheduler import Scheduler
 
-with daemon.DaemonContext():
-    Scheduler()
+# with daemon.DaemonContext():
+Scheduler()
