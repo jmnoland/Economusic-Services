@@ -97,8 +97,11 @@ def createEmail(client):
         check = sendEmail(client["email"],text)
         if check:
             mailSent[0] = True
-            for cc in client["ccEmails"]:
-                sendEmail(cc, text)
+            try:
+                for cc in client["ccEmails"]:
+                    sendEmail(cc, text)
+            except KeyError:
+                pass
 
     client["sent"] = check
     client["sentTime"] = datetime.datetime.today().strftime("%d/%m/%Y, %H:%M:%S")
