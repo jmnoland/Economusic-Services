@@ -100,12 +100,7 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 FetchRentalsDue.main()
-                                conn = sqlite3.connect(self.jobDbPath)
-                                cur = conn.cursor()
-                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'FetchRentals' ''')
-                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("FetchRentals", False, self.newDateTime(datetime.datetime.today(), 12)))
-                                conn.commit()
-                                conn.close()
+                                self.updateJob("FetchRentals", 12)
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -116,12 +111,7 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 GenerateRentalPDF.main()
-                                conn = sqlite3.connect(self.jobDbPath)
-                                cur = conn.cursor()
-                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'GenerateRentalPDF' ''')
-                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("GenerateRentalPDF", False, self.newDateTime(datetime.datetime.today(), 14)))
-                                conn.commit()
-                                conn.close()
+                                self.updateJob("GenerateRentalPDF", 14)
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -132,12 +122,7 @@ class Scheduler():
                 if(self.checkRun() == True):
                         try:
                                 Complete.main()
-                                conn = sqlite3.connect(self.jobDbPath)
-                                cur = conn.cursor()
-                                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE 'Complete' ''')
-                                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", ("Complete", False, self.newDateTime(datetime.datetime.today(), 8)))
-                                conn.commit()
-                                conn.close()
+                                self.updateJob("Complete", 8)
                         except Exception:
                                 self.stackTrace = traceback.format_exc()
                                 if(self.stackTrace == None):
@@ -156,6 +141,14 @@ class Scheduler():
         def newDateTime(self, dtObj, nHour, addDay=1):
                 newDate = dtObj + datetime.timedelta(days=addDay)
                 return newDate.replace(hour=nHour, minute=0, second=0, microsecond=0)
+
+        def updateJob(self, process, hour):
+                conn = sqlite3.connect(self.jobDbPath)
+                cur = conn.cursor()
+                cur.execute(''' UPDATE Jobs SET Complete = 1 WHERE Complete = 0 AND Process LIKE ? ''', (process,))
+                cur.execute("INSERT INTO Jobs VALUES (?,?,?)", (process , False, self.newDateTime(datetime.datetime.today(), hour)))
+                conn.commit()
+                conn.close()
                         
         def errorHandler(self, process, error):
                 errorInfo = []
