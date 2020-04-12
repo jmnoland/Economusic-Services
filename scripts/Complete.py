@@ -57,7 +57,10 @@ def main():
     complete(fileNames)
     if(len(archiveList) > 0):
         if mailSent[0]:
-            finalEmail()
+            try:
+                finalEmail()
+            except FileNotFoundError:
+                pass
         archiveFiles()
 
 def getClientDetails(clientId):
