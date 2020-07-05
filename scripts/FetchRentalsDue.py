@@ -46,6 +46,9 @@ def main():
         formatData()
         writeJson(date)
 
+    rentalResults.clear()
+    clientResults.clear()
+
 # Function to query rentals due
 def queryRental(start, end):
     rentalQuery = db.collection(u'rentals').where(u'billDate',u'>',start).where(u'billDate',u'<',end)
@@ -105,6 +108,7 @@ def writeJson(date):
     finalName = os.path.join(dirname, '../files/json/' + fileName)
     with open(finalName, 'w') as file:
         json.dump(clientResults, file, indent=4, sort_keys=True)
-        
+
 #    with open(finalName, 'w', encoding='utf-8') as file:
 #        json.dump(clientResults, file, ensure_ascii=False, indent=4)
+main()

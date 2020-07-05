@@ -63,6 +63,9 @@ def main():
                 pass
         archiveFiles()
 
+    archiveList.clear()
+    totalRent.clear()
+
 def getClientDetails(clientId):
     path = os.path.join(os.path.dirname(__file__), '../files/batched/' + clientId + '.json')
     clientData = None
