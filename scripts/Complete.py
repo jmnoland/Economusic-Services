@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 import json
 import email, smtplib, ssl
 import threading
+import shutil
 
 try:
     import queue
@@ -23,6 +24,8 @@ accountInfo = {}
 infoPath = os.path.join(os.path.dirname(__file__), '../environment/emailinfo.json')
 with open(infoPath) as file:
     accountInfo = json.load(file)
+
+shareDestination = os.path.join(accountInfo["share"], 'My Drive/Economusic/Invoices')
 
 path = os.path.join(os.path.dirname(__file__), '../environment/credentials.json')
 cred = credentials.Certificate(path)
@@ -234,5 +237,18 @@ def archiveFiles():
             os.rename(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(directoryName ,archivePath + "/" + fileName + '.pdf'))
             os.remove(os.path.join(directoryName , batchPath + fileName + '.json'))
             os.remove(os.path.join(directoryName , batchPath + fileName + '.pdf'))
+        except:
+            pass
+        
+        try:
+            with open(os.path.join(directoryName, batchPath + fileName + '.json'), 'r') as rentalInfo:
+                rentalData = json.load(rentalInfo)
+                clientName = rentalData["name"] + rentalData["surname"] + dateToday.strftime("%d") + '.json'
+                shareArchive = os.path.join(dateToday.strftime("%Y"), dateToday.strftime("%m"))
+                try:
+                    os.makedirs(os.path.join(shareDestination, shareArchive))
+                except FileExistsError:
+                    pass
+                shutil.copy(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(shareDestination, shareArchive + "/" + clientName))
         except:
             pass
