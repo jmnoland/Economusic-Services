@@ -243,12 +243,13 @@ def archiveFiles():
         try:
             with open(os.path.join(directoryName, batchPath + fileName + '.json'), 'r') as rentalInfo:
                 rentalData = json.load(rentalInfo)
-                clientName = rentalData["name"] + rentalData["surname"] + dateToday.strftime("%d") + '.json'
+                clientName = rentalData["name"] + rentalData["surname"] + dateToday.strftime("%d")
                 shareArchive = os.path.join(dateToday.strftime("%Y"), dateToday.strftime("%m"))
                 try:
                     os.makedirs(os.path.join(shareDestination, shareArchive))
                 except FileExistsError:
                     pass
-                shutil.copy(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(shareDestination, shareArchive + "/" + clientName))
+                shutil.copy(os.path.join(directoryName , batchPath + fileName + '.json'), os.path.join(shareDestination, shareArchive + "/" + clientName + '.json'))
+                shutil.copy(os.path.join(directoryName , batchPath + fileName + '.pdf'), os.path.join(shareDestination, shareArchive + "/" + clientName + '.pdf'))
         except:
             pass
